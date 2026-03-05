@@ -49,46 +49,46 @@ SwitchAudioPlayer::SwitchAudioPlayer()
         this->sounds[sound] = PLSR_PLAYER_INVALID_SOUND;
 
     // Init pulsar player
-//    PLSR_RC rc = plsrPlayerInit();
-//    if (PLSR_RC_FAILED(rc))
-//    {
-//        Logger::error("Unable to init Pulsar player: {:#x}", rc);
-//        return;
-//    }
-//
-//    // Check if the program running is qlaunch
-//    char bfsarPath[29];
-//    u64 programId = 0;
-//    svcGetInfo(&programId, InfoType_ProgramId, CUR_PROCESS_HANDLE, 0);
-//    if (programId != QLAUNCH_PID)
-//    {
-//        // Mount qlaunch ROMFS for the BFSAR
-//        Result result = romfsMountDataStorageFromProgram(QLAUNCH_PID, QLAUNCH_MOUNT_POINT);
-//        if (!R_SUCCEEDED(result))
-//        {
-//            Logger::error("Unable to mount qlaunch ROMFS: {:#x}", result);
-//
-//            plsrPlayerExit();
-//            return;
-//        }
-//
-//        sprintf(bfsarPath, "%s:%s", QLAUNCH_MOUNT_POINT, BFSAR_PATH);
-//    }
-//    else
-//        sprintf(bfsarPath, "%s:%s", ROMFS_MOUNT_POINT, BFSAR_PATH);
-//
-//    // Open qlaunch BFSAR
-//    rc = plsrBFSAROpen(bfsarPath, &this->qlaunchBfsar);
-//    if (PLSR_RC_FAILED(rc))
-//    {
-//        Logger::error("Unable to open qlaunch BFSAR: {:#x}", rc);
-//
-//        plsrPlayerExit();
-//        return;
-//    }
-//
-//    // Good to go~
-//    this->init = true;
+    PLSR_RC rc = plsrPlayerInit();
+    if (PLSR_RC_FAILED(rc))
+    {
+        Logger::error("Unable to init Pulsar player: {:#x}", rc);
+        return;
+    }
+
+    // Check if the program running is qlaunch
+    char bfsarPath[29];
+    u64 programId = 0;
+    svcGetInfo(&programId, InfoType_ProgramId, CUR_PROCESS_HANDLE, 0);
+    if (programId != QLAUNCH_PID)
+    {
+        // Mount qlaunch ROMFS for the BFSAR
+        Result result = romfsMountDataStorageFromProgram(QLAUNCH_PID, QLAUNCH_MOUNT_POINT);
+        if (!R_SUCCEEDED(result))
+        {
+            Logger::error("Unable to mount qlaunch ROMFS: {:#x}", result);
+
+            plsrPlayerExit();
+            return;
+        }
+
+        sprintf(bfsarPath, "%s:%s", QLAUNCH_MOUNT_POINT, BFSAR_PATH);
+    }
+    else
+        sprintf(bfsarPath, "%s:%s", ROMFS_MOUNT_POINT, BFSAR_PATH);
+
+    // Open qlaunch BFSAR
+    rc = plsrBFSAROpen(bfsarPath, &this->qlaunchBfsar);
+    if (PLSR_RC_FAILED(rc))
+    {
+        Logger::error("Unable to open qlaunch BFSAR: {:#x}", rc);
+
+        plsrPlayerExit();
+        return;
+    }
+
+    // Good to go~
+    this->init = true;
 }
 
 bool SwitchAudioPlayer::load(enum Sound sound)
@@ -128,21 +128,21 @@ bool SwitchAudioPlayer::play(enum Sound sound, float pitch)
     if (sound == SOUND_NONE)
         return true;
 
-//    // Load the sound if needed
-//    if (this->sounds[sound] == PLSR_PLAYER_INVALID_SOUND)
-//    {
-//        if (!this->load(sound))
-//            return false;
-//    }
-//
-//    // Play the sound
-//    plsrPlayerSetPitch(this->sounds[sound], pitch);
-//    PLSR_RC rc = plsrPlayerPlay(this->sounds[sound]);
-//    if (PLSR_RC_FAILED(rc))
-//    {
-//        Logger::error("Unable to play sound {}: {:#x}", sound, rc);
-//        return false;
-//    }
+    // Load the sound if needed
+    if (this->sounds[sound] == PLSR_PLAYER_INVALID_SOUND)
+    {
+        if (!this->load(sound))
+            return false;
+    }
+
+    // Play the sound
+    plsrPlayerSetPitch(this->sounds[sound], pitch);
+    PLSR_RC rc = plsrPlayerPlay(this->sounds[sound]);
+    if (PLSR_RC_FAILED(rc))
+    {
+        Logger::error("Unable to play sound {}: {:#x}", (int)sound, rc);
+        return false;
+    }
 
     return true;
 }
@@ -159,8 +159,9 @@ SwitchAudioPlayer::~SwitchAudioPlayer()
             plsrPlayerFree(this->sounds[sound]);
     }
 
-    // Close the archive and exit player
+    // Close the archive, unmount romfs and exit player
     plsrBFSARClose(&this->qlaunchBfsar);
+    romfsUnmount(QLAUNCH_MOUNT_POINT);
     plsrPlayerExit();
 }
 
